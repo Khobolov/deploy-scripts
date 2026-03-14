@@ -1,47 +1,24 @@
+# Usage: docker compose --env-file env.sh up -d
+
 services:
   traefik:
-    image: traefik:3.5
-    command:
-      - "--log.level=INFO"
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=traefik-public"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.myresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
-      - "--certificatesresolvers.myresolver.acme.email=postmaster@mydomain"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
-
+    container_name: ${CONTAINER_NAME}
+    image: traefik:${VERSION}
+    restart: always
     ports:
-      - "80:80"       # HTTP
-      - "443:443"     # HTTPS
-      - "8080:8080"   # Traefik Dashboard
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./traefik.yaml:/traefik.yaml:ro"
-      - "./letsencrypt:/letsencrypt"
-
+      - ${CERTS_PATH}:/certs:ro
+      - ${DOCKER_SOCKET}:/var/run/docker.sock:ro
+      - ${CONFIG_DIR}:/etc/traefik:ro
     labels:
       - "traefik.enable=true"
-      # Dashboard
-      - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`)"
-      - "traefik.http.routers.dashboard.service=api@internal"
-      - "traefik.http.routers.dashboard.entrypoints=web"
-      - "traefik.http.routers.dashboard.middlewares=auth"
-      - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$h6uskkk$$aiCpnaWqRoBxAE8Jw3we70"
-
     networks:
       - traefik-public
 
-    restart: unless-stopped
-
 networks:
-  # Shared network for Traefik to route traffic to all tenant containers
   traefik-public:
-    name: traefik-public
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.25.0.0/16
+    name: ${NETWORK}
+    external: true

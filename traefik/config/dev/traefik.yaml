@@ -1,0 +1,17 @@
+log:
+  level: INFO
+
+api:
+  insecure: true
+  dashboard: true
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  docker:
+    endpoint: "tcp://host.docker.internal:2375"
+    exposedByDefault: false
+    network: traefik-public
+    watch: true
